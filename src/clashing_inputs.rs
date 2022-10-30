@@ -650,7 +650,9 @@ mod tests {
             app.send_input(Key2);
             app.update();
 
-            let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut action_data: Vec<_> = std::iter::repeat(ActionData::default())
+                .take(Action::num_variants())
+                .collect();
             action_data[One.index()].state = ButtonState::JustPressed;
             action_data[Two.index()].state = ButtonState::JustPressed;
             action_data[OneAndTwo.index()].state = ButtonState::JustPressed;
@@ -661,7 +663,9 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut expected: Vec<_> = std::iter::repeat(ActionData::default())
+                .take(Action::num_variants())
+                .collect();
             expected[OneAndTwo.index()].state = ButtonState::JustPressed;
 
             assert_eq!(action_data, expected);
@@ -678,7 +682,9 @@ mod tests {
             app.send_input(Up);
             app.update();
 
-            let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut action_data: Vec<_> = std::iter::repeat(ActionData::default())
+                .take(Action::num_variants())
+                .collect();
             action_data[MoveDPad.index()].state = ButtonState::JustPressed;
             action_data[CtrlUp.index()].state = ButtonState::JustPressed;
 
@@ -688,7 +694,9 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut expected: Vec<_> = std::iter::repeat(ActionData::default())
+                .take(Action::num_variants())
+                .collect();
             expected[CtrlUp.index()].state = ButtonState::JustPressed;
 
             assert_eq!(action_data, expected);

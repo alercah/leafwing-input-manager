@@ -244,23 +244,15 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
     pub fn merge(&mut self, other: &InputMap<A>) -> &mut Self {
-        let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
+        let mut new_map = self.clone();
+        new_map.associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
             self.associated_gamepad
         } else {
             None
         };
 
-        let mut new_map = InputMap {
-            associated_gamepad,
-            ..Default::default()
-        };
-
-        for action in A::variants() {
-            for input in self.get(action.clone()).iter() {
-                new_map.insert(input.clone(), action.clone());
-            }
-
-            for input in other.get(action.clone()).iter() {
+        for (mapping, action) in other.iter() {
+            for input in mapping.iter() {
                 new_map.insert(input.clone(), action.clone());
             }
         }
@@ -327,7 +319,9 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> Vec<ActionData> {
-        let mut action_data = vec![ActionData::default(); A::N_VARIANTS];
+        let mut action_data: Vec<_> = std::iter::repeat(ActionData::default())
+            .take(A::num_variants())
+            .collect();
 
         // Generate the raw action presses
         for action in A::variants() {
@@ -375,9 +369,9 @@ impl<A: Actionlike> InputMap<A> {
             .map(|(action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
     }
 
-    /// Returns an iterator over all mapped inputs
-    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
-        self.map.iter()
+    /// Returns an iterator over all mapped actions with their inputs
+    pub fn iter_mapped(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
+        self.iter().filter(|&(inputs, _)| inputs.len() > 0)
     }
 
     /// Returns the `action` mappings
