@@ -502,6 +502,8 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// in order to connect `bevy::ui` buttons to the corresponding `ActionState`.
 ///
 /// ```rust
+/// # #[cfg(feature = "ui")]
+/// # {
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
@@ -530,6 +532,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 ///         action: DanceDance::Left,
 ///         entity: dance_tracker,
 ///     });
+/// # }
 ///```
 ///
 /// Writing your own systems that use the [`ActionStateDriver`] component is easy,
