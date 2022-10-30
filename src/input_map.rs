@@ -13,6 +13,7 @@ use bevy::input::gamepad::Gamepad;
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 /// Maps from raw inputs to an input-method agnostic representation
@@ -74,7 +75,7 @@ use std::marker::PhantomData;
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
-    map: Vec<PetitSet<UserInput, 16>>,
+    map: HashMap<usize, PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
     #[serde(skip)]
     marker: PhantomData<A>,
@@ -83,7 +84,7 @@ pub struct InputMap<A: Actionlike> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: A::variants().map(|_| PetitSet::default()).collect(),
+            map: HashMap::new(),
             associated_gamepad: None,
             marker: PhantomData,
         }
@@ -165,7 +166,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert(&mut self, input: impl Into<UserInput>, action: A) -> &mut Self {
         let input = input.into();
 
-        self.map[action.index()].insert(input);
+        self.map.entry(action.index()).or_default().insert(input);
 
         self
     }
@@ -180,7 +181,10 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_at(&mut self, input: impl Into<UserInput>, action: A, index: usize) -> &mut Self {
         let input = input.into();
 
-        self.map[action.index()].insert_at(input, index);
+        self.map
+            .entry(action.index())
+            .or_default()
+            .insert_at(input, index);
 
         self
     }
@@ -327,7 +331,11 @@ impl<A: Actionlike> InputMap<A> {
         for action in A::variants() {
             let mut inputs = Vec::new();
 
-            for input in self.get(action.clone()).iter() {
+            for input in self
+                .get(action.clone())
+                .iter()
+                .flat_map(|mappings| mappings.iter())
+            {
                 let action = &mut action_data[action.index()];
 
                 // Merge axis pair into action data
@@ -365,8 +373,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
         self.map
             .iter()
-            .enumerate()
-            .map(|(action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
+            .map(|(&action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
     }
 
     /// Returns an iterator over all mapped actions with their inputs
@@ -376,8 +383,8 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Returns the `action` mappings
     #[must_use]
-    pub fn get(&self, action: A) -> &PetitSet<UserInput, 16> {
-        &self.map[action.index()]
+    pub fn get(&self, action: A) -> Option<&PetitSet<UserInput, 16>> {
+        self.map.get(&action.index())
     }
 
     /// How many input bindings are registered total?
@@ -385,7 +392,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn len(&self) -> usize {
         let mut i = 0;
         for action in A::variants() {
-            i += self.get(action).len();
+            i += self.get(action).map_or(0, |input| input.len());
         }
         i
     }
@@ -402,21 +409,25 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Clears all inputs registered for the `action`
     pub fn clear_action(&mut self, action: A) {
-        self.map[action.index()].clear();
+        self.map.remove(&action.index());
     }
 
     /// Removes the input for the `action` at the provided index
     ///
     /// Returns `true` if an element was found.
     pub fn remove_at(&mut self, action: A, index: usize) -> bool {
-        self.map[action.index()].remove_at(index)
+        self.map
+            .get_mut(&action.index())
+            .map_or(false, |mappings| mappings.remove_at(index))
     }
 
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
-        self.map[action.index()].remove(&input.into())
+        self.map
+            .get_mut(&action.index())
+            .and_then(|mappings| mappings.remove(&input.into()))
     }
 }
 
@@ -440,15 +451,19 @@ mod tests {
         input_map.insert(KeyCode::Space, Action::Run);
 
         assert_eq!(
-            *input_map.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
+            input_map.get(Action::Run),
+            Some(&PetitSet::<UserInput, 16>::from_iter([
+                KeyCode::Space.into()
+            ]))
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(KeyCode::Space, Action::Run);
         assert_eq!(
-            *input_map.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
+            input_map.get(Action::Run),
+            Some(&PetitSet::<UserInput, 16>::from_iter([
+                KeyCode::Space.into()
+            ]))
         );
     }
 
@@ -463,8 +478,11 @@ mod tests {
         input_map_1.insert(KeyCode::Return, Action::Run);
 
         assert_eq!(
-            *input_map_1.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
+            input_map_1.get(Action::Run),
+            Some(&PetitSet::<UserInput, 16>::from_iter([
+                KeyCode::Space.into(),
+                KeyCode::Return.into()
+            ]))
         );
 
         let input_map_2 = InputMap::<Action>::new([

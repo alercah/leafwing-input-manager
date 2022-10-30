@@ -149,8 +149,16 @@ impl<A: Actionlike> InputMap<A> {
     fn possible_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
 
-        for input_a in self.get(action_a).iter() {
-            for input_b in self.get(action_b.clone()).iter() {
+        for input_a in self
+            .get(action_a)
+            .iter()
+            .flat_map(|mappings| mappings.iter())
+        {
+            for input_b in self
+                .get(action_b.clone())
+                .iter()
+                .flat_map(|mappings| mappings.iter())
+            {
                 if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());

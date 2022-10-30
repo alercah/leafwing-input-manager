@@ -54,7 +54,7 @@ fn controls_window_system(
                 .show(ui, |ui| {
                     for action in ControlAction::variants() {
                         ui.label(action.to_string());
-                        let inputs = control_settings.input.get(action);
+                        let inputs = control_settings.input.get(action).unwrap_or_default();
                         for index in 0..INPUT_VARIANTS {
                             let button_text = match inputs.get_at(index) {
                                 Some(UserInput::Single(InputKind::GamepadButton(
