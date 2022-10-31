@@ -66,6 +66,11 @@ fn do_nothing() {
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]));
 
+    // Begin tracking timing for PayRespects.
+    app.world
+        .resource_mut::<ActionState<Action>>()
+        .release(Action::PayRespects);
+
     app.update();
     let action_state = app.world.resource::<ActionState<Action>>();
     let t0 = action_state.instant_started(Action::PayRespects);

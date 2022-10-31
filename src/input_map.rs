@@ -310,7 +310,9 @@ impl<A: Actionlike> InputMap<A> {
         clash_strategy: ClashStrategy,
     ) -> bool {
         let action_data = self.which_pressed(input_streams, clash_strategy);
-        action_data[action.index()].state.pressed()
+        action_data
+            .get(&action.index())
+            .map_or(false, |data| data.state.pressed())
     }
 
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
@@ -322,41 +324,38 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> Vec<ActionData> {
-        let mut action_data: Vec<_> = std::iter::repeat(ActionData::default())
-            .take(A::num_variants())
-            .collect();
+    ) -> HashMap<usize, ActionData> {
+        let mut action_data = HashMap::<usize, ActionData>::default();
 
         // Generate the raw action presses
         for action in A::variants() {
             let mut inputs = Vec::new();
+            let mut data = action_data.entry(action.index()).or_default();
 
             for input in self
                 .get(action.clone())
                 .iter()
                 .flat_map(|mappings| mappings.iter())
             {
-                let action = &mut action_data[action.index()];
-
                 // Merge axis pair into action data
                 let axis_pair = input_streams.input_axis_pair(input);
                 if let Some(axis_pair) = axis_pair {
-                    if let Some(current_axis_pair) = &mut action.axis_pair {
+                    if let Some(current_axis_pair) = &mut data.axis_pair {
                         *current_axis_pair = current_axis_pair.merged_with(axis_pair);
                     } else {
-                        action.axis_pair = Some(axis_pair);
+                        data.axis_pair = Some(axis_pair);
                     }
                 }
 
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
 
-                    action.value += input_streams.input_value(input);
+                    data.value += input_streams.input_value(input);
                 }
             }
 
             if !inputs.is_empty() {
-                action_data[action.index()].state = ButtonState::JustPressed;
+                data.state = ButtonState::JustPressed;
             }
         }
 
