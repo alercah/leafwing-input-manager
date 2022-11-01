@@ -47,7 +47,7 @@ This ensures the examples are in-sync with the latest release.
 ### Getting started
 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
-2. Create an enum of the logical actions you want to represent, and derive the `Actionlike` trait for it.
+2. Create an enum of the logical actions you want to represent, and derive the `ActionKey` trait for it.
 3. Add the `InputManagerPlugin` to your `App`.
 4. Add the `InputManagerBundle` to your player entity (or entities!).
 5. Configure a mapping between your inputs and your actions by modifying the `InputMap` component on your player entity.
@@ -71,7 +71,7 @@ fn main() {
 }
 
 // This is the list of "things in the game I want to be able to do based on input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum Action {
     Run,
     Jump,

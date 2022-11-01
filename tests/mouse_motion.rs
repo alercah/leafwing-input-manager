@@ -5,7 +5,7 @@ use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisTy
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -13,7 +13,7 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum AxislikeTestAction {
     X,
     Y,

@@ -1,7 +1,7 @@
 //! Contains main plugin exported by this crate.
 
 use crate::clashing_inputs::ClashStrategy;
-use crate::Actionlike;
+use crate::ActionKey;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
@@ -14,15 +14,15 @@ use bevy::ui::UiSystem;
 
 /// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) that can be conveniently checked
 ///
-/// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game.
+/// This plugin needs to be passed in an [`ActionKey`] enum type that you've created for your game.
 /// Each variant represents a "virtual button" whose state is stored in an [`ActionState`](crate::action_state::ActionState) struct.
 ///
 /// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
 ///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
 ///  - an [`ActionState`](crate::action_state::ActionState) component, which stores the current input state for that entity in an source-agnostic fashion
 ///
-/// If you have more than one distinct type of action (e.g. menu actions, camera actions and player actions), consider creating multiple `Actionlike` enums
-/// and adding a copy of this plugin for each `Actionlike` type.
+/// If you have more than one distinct type of action (e.g. menu actions, camera actions and player actions), consider creating multiple `ActionKey` enums
+/// and adding a copy of this plugin for each `ActionKey` type.
 ///  
 /// ## Systems
 ///
@@ -44,13 +44,13 @@ use bevy::ui::UiSystem;
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
 ///    - labeled [`InputManagerSystem::Update`]
 /// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
-pub struct InputManagerPlugin<A: Actionlike> {
+pub struct InputManagerPlugin<A: ActionKey> {
     _phantom: PhantomData<A>,
     machine: Machine,
 }
 
 // Deriving default induces an undesired bound on the generic
-impl<A: Actionlike> Default for InputManagerPlugin<A> {
+impl<A: ActionKey> Default for InputManagerPlugin<A> {
     fn default() -> Self {
         Self {
             _phantom: PhantomData::default(),
@@ -59,7 +59,7 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
     }
 }
 
-impl<A: Actionlike> InputManagerPlugin<A> {
+impl<A: ActionKey> InputManagerPlugin<A> {
     /// Creates a version of the plugin intended to run on the server
     ///
     /// Inputs will not be processed; instead, [`ActionState`](crate::action_state::ActionState)
@@ -80,7 +80,7 @@ enum Machine {
     Client,
 }
 
-impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
+impl<A: ActionKey> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
@@ -143,7 +143,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 /// Controls whether or not the [`ActionState`](crate::action_state::ActionState) / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
 ///
 /// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
-pub struct ToggleActions<A: Actionlike> {
+pub struct ToggleActions<A: ActionKey> {
     /// When this is false, [`ActionState`](crate::action_state::ActionState)'s corresponding to `A` will ignore user inputs
     ///
     /// When this is set to false, all corresponding [`ActionState`]s are released
@@ -152,7 +152,7 @@ pub struct ToggleActions<A: Actionlike> {
     pub phantom: PhantomData<A>,
 }
 
-impl<A: Actionlike> ToggleActions<A> {
+impl<A: ActionKey> ToggleActions<A> {
     /// A [`ToggleActions`] in enabled state.
     pub const ENABLED: ToggleActions<A> = ToggleActions::<A> {
         enabled: true,
@@ -166,7 +166,7 @@ impl<A: Actionlike> ToggleActions<A> {
 }
 
 // Implement manually to not require [`Default`] for `A`
-impl<A: Actionlike> Default for ToggleActions<A> {
+impl<A: ActionKey> Default for ToggleActions<A> {
     fn default() -> Self {
         Self {
             enabled: true,

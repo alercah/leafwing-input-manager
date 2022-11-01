@@ -1,6 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::Actionlike;
+use crate::ActionKey;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-/// Metadata about an [`Actionlike`] action
+/// Metadata about an [`ActionKey`] action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -45,7 +45,7 @@ pub struct ActionData {
 /// # use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
+/// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 /// enum Action {
 ///     Left,
 ///     Right,
@@ -94,7 +94,7 @@ pub struct ActionData {
 /// # use bevy::utils::Instant;
 /// # use std::time::Duration;
 ///
-/// # #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
+/// # #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 /// # enum Action {
 /// #     Left,
 /// #     Right,
@@ -121,15 +121,15 @@ pub struct ActionData {
 /// assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ActionState<A: Actionlike> {
+pub struct ActionState<A: ActionKey> {
     /// The [`ActionData`] of each action
     ///
-    /// The position in this vector corresponds to [`Actionlike::index`].
+    /// The position in this vector corresponds to [`ActionKey::index`].
     action_data: HashMap<usize, ActionData>,
     _phantom: PhantomData<A>,
 }
 
-impl<A: Actionlike> ActionState<A> {
+impl<A: ActionKey> ActionState<A> {
     /// Updates the [`ActionState`] based on a map of [`ActionData`].
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
@@ -163,7 +163,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use leafwing_input_manager::buttonlike::ButtonState;
     /// use bevy::utils::Instant;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -214,7 +214,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -241,7 +241,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -337,13 +337,13 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum AbilitySlot {
     ///     Slot1,
     ///     Slot2,
     /// }
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -418,7 +418,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Eat,
     ///     Sleep,
@@ -552,7 +552,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 }
 
-impl<A: Actionlike> Default for ActionState<A> {
+impl<A: ActionKey> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
             action_data: HashMap::default(),
@@ -574,7 +574,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
-/// #[derive(Actionlike, Clone, Copy)]
+/// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 /// enum DanceDance {
 ///     Left,
 ///     Right,
@@ -607,7 +607,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// is distinct from the entity whose [`ActionState`] you want to set.
 /// Check the source code of [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) for an example of how this is done.
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ActionStateDriver<A: Actionlike> {
+pub struct ActionStateDriver<A: ActionKey> {
     /// The action triggered by this entity
     pub action: A,
     /// The entity whose action state should be updated
@@ -671,7 +671,7 @@ impl Timing {
 /// `ID` should be a component type that stores a unique stable identifier for the entity
 /// that stores the corresponding [`ActionState`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
+pub enum ActionDiff<A: ActionKey, ID: Eq + Clone + Component> {
     /// The action was pressed
     Pressed {
         /// The value of the action
@@ -692,9 +692,9 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 mod tests {
     use crate as leafwing_input_manager;
     use crate::input_mocking::MockInput;
-    use leafwing_input_manager_macros::Actionlike;
+    use leafwing_input_manager_macros::ActionKey;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     enum Action {
         Run,
         Jump,

@@ -5,7 +5,7 @@ use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, Modifier, UserInput};
-use crate::Actionlike;
+use crate::ActionKey;
 
 use bevy::ecs::component::Component;
 use bevy::input::gamepad::Gamepad;
@@ -41,7 +41,7 @@ use std::marker::PhantomData;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
-/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+/// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 /// enum Action {
 ///     Run,
 ///     Hide,
@@ -72,16 +72,16 @@ use std::marker::PhantomData;
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
-pub struct InputMap<A: Actionlike> {
+pub struct InputMap<A: ActionKey> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
-    /// indexed by the `Actionlike::id` of `A`
+    /// indexed by the `ActionKey::id` of `A`
     map: HashMap<usize, PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
     #[serde(skip)]
     marker: PhantomData<A>,
 }
 
-impl<A: Actionlike> Default for InputMap<A> {
+impl<A: ActionKey> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
             map: HashMap::new(),
@@ -92,7 +92,7 @@ impl<A: Actionlike> Default for InputMap<A> {
 }
 
 // Constructors
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Creates a new [`InputMap`] from an iterator of `(user_input, action)` pairs
     ///
     /// To create an empty input map, use the [`Default::default`] method instead.
@@ -100,10 +100,10 @@ impl<A: Actionlike> InputMap<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
-    /// use leafwing_input_manager::Actionlike;
+    /// use leafwing_input_manager::ActionKey;
     /// use bevy::input::keyboard::KeyCode;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -140,7 +140,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// use bevy::input::keyboard::KeyCode;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -157,7 +157,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 // Insertion
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Insert a mapping between `input` and `action`
     ///
     /// # Panics
@@ -267,7 +267,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 // Configuration
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
     ///
     /// If this is [`None`], input from any connected gamepad will be used.
@@ -297,7 +297,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 // Check whether buttons are pressed
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
@@ -318,7 +318,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    /// The position in each vector corresponds to `Actionlike::index()`.
+    /// The position in each vector corresponds to `ActionKey::index()`.
     #[must_use]
     pub fn which_pressed(
         &self,
@@ -367,7 +367,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 // Utilities
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Returns an iterator over actions with their inputs
     pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
         self.map
@@ -405,7 +405,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 // Removing
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Clears all inputs registered for the `action`
     pub fn clear_action(&mut self, action: A) {
         self.map.remove(&action.index());
@@ -434,7 +434,7 @@ mod tests {
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     enum Action {
         Run,
         Jump,

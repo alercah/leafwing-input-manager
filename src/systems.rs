@@ -8,7 +8,7 @@ use crate::{
     input_map::InputMap,
     input_streams::InputStreams,
     plugin::ToggleActions,
-    Actionlike,
+    ActionKey,
 };
 
 use bevy::ecs::{prelude::*, schedule::ShouldRun};
@@ -28,7 +28,7 @@ use bevy::ui::Interaction;
 ///
 /// Clears the just-pressed and just-released values of all [`ActionState`]s.
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
-pub fn tick_action_state<A: Actionlike>(
+pub fn tick_action_state<A: ActionKey>(
     mut query: Query<&mut ActionState<A>>,
     action_state: Option<ResMut<ActionState<A>>>,
     time: Res<Time>,
@@ -58,7 +58,7 @@ pub fn tick_action_state<A: Actionlike>(
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
 #[allow(clippy::too_many_arguments)]
-pub fn update_action_state<A: Actionlike>(
+pub fn update_action_state<A: ActionKey>(
     gamepad_buttons: Res<Input<GamepadButton>>,
     gamepad_button_axes: Res<Axis<GamepadButton>>,
     gamepad_axes: Res<Axis<GamepadAxis>>,
@@ -118,7 +118,7 @@ pub fn update_action_state<A: Actionlike>(
 ///
 /// The action triggered is determined by the variant stored in your UI-defined button.
 #[cfg(feature = "ui")]
-pub fn update_action_state_from_interaction<A: Actionlike>(
+pub fn update_action_state_from_interaction<A: ActionKey>(
     ui_query: Query<(&Interaction, &ActionStateDriver<A>)>,
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
@@ -138,7 +138,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 /// suitable to be sent across a network.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
-pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
+pub fn generate_action_diffs<A: ActionKey, ID: Eq + Clone + Component>(
     action_state_query: Query<(&ActionState<A>, &ID)>,
     mut action_diffs: EventWriter<ActionDiff<A, ID>>,
 ) {
@@ -165,7 +165,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
 /// suitable to be sent across a network.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
-pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
+pub fn process_action_diffs<A: ActionKey, ID: Eq + Component + Clone>(
     mut action_state_query: Query<(&mut ActionState<A>, &ID)>,
     mut action_diffs: EventReader<ActionDiff<A, ID>>,
 ) {
@@ -197,7 +197,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
 }
 
 /// Release all inputs if the [`ToggleActions<A>`] resource exists and its `enabled` field is false.
-pub fn release_on_disable<A: Actionlike>(
+pub fn release_on_disable<A: ActionKey>(
     mut query: Query<&mut ActionState<A>>,
     resource: Option<ResMut<ActionState<A>>>,
     toggle_actions: Res<ToggleActions<A>>,
@@ -217,7 +217,7 @@ pub fn release_on_disable<A: Actionlike>(
 /// By default, [`InputManagerPlugin<A>`] will run this on [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate).
 /// For components you must remove the [`InputMap<A>`] before [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate)
 /// or this will not run.
-pub fn release_on_input_map_removed<A: Actionlike>(
+pub fn release_on_input_map_removed<A: ActionKey>(
     removed_components: RemovedComponents<InputMap<A>>,
     input_map_resource: Option<ResMut<InputMap<A>>>,
     action_state_resource: Option<ResMut<ActionState<A>>>,
@@ -246,7 +246,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 }
 
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
-pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
+pub(super) fn run_if_enabled<A: ActionKey>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
     if toggle_actions.enabled {
         ShouldRun::Yes
     } else {

@@ -15,7 +15,7 @@ fn main() {
 }
 
 // This is the list of "things in the game I want to be able to do based on input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum Action {
     Run,
     Jump,

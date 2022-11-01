@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 /// The current state of a particular button,
-/// usually corresponding to a single [`Actionlike`] action.
+/// usually corresponding to a single [`ActionKey`] action.
 ///
 /// By default, buttons are [`ButtonState::Released`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

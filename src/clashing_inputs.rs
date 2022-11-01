@@ -5,7 +5,7 @@ use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, UserInput};
-use crate::Actionlike;
+use crate::ActionKey;
 
 use itertools::Itertools;
 use petitset::PetitSet;
@@ -38,8 +38,8 @@ pub enum ClashStrategy {
     PrioritizeLongest,
     /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
-    /// Uses the iteration order returned by [`Actionlike::variants()`],
-    /// which is generated in order of the enum items by the `#[derive(Actionlike)]` macro.
+    /// Uses the iteration order returned by [`ActionKey::variants()`],
+    /// which is generated in order of the enum items by the `#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]` macro.
     UseActionOrder,
 }
 
@@ -84,10 +84,10 @@ impl UserInput {
     }
 }
 
-impl<A: Actionlike> InputMap<A> {
+impl<A: ActionKey> InputMap<A> {
     /// Resolve clashing inputs, removing action presses that have been overruled
     ///
-    /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
+    /// The `usize` stored in `pressed_actions` corresponds to `ActionKey::index`
     pub fn handle_clashes(
         &self,
         action_data: &mut HashMap<usize, ActionData>,
@@ -182,17 +182,17 @@ impl<A: Actionlike> InputMap<A> {
 /// A user-input clash, which stores the actions that are being clashed on,
 /// as well as the corresponding user inputs
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub(crate) struct Clash<A: Actionlike> {
-    /// The `Actionlike::index` value corresponding to `action_a`
+pub(crate) struct Clash<A: ActionKey> {
+    /// The `ActionKey::index` value corresponding to `action_a`
     index_a: usize,
-    /// The `Actionlike::index` value corresponding to `action_b`
+    /// The `ActionKey::index` value corresponding to `action_b`
     index_b: usize,
     inputs_a: Vec<UserInput>,
     inputs_b: Vec<UserInput>,
     _phantom: PhantomData<A>,
 }
 
-impl<A: Actionlike> Clash<A> {
+impl<A: ActionKey> Clash<A> {
     /// Creates a new clash between the two actions
     #[must_use]
     fn new(action_a: A, action_b: A) -> Self {
@@ -205,7 +205,7 @@ impl<A: Actionlike> Clash<A> {
         }
     }
 
-    /// Creates a new clash between the two actions based on their `Actionlike::index` indexes
+    /// Creates a new clash between the two actions based on their `ActionKey::index` indexes
     #[must_use]
     fn from_indexes(index_a: usize, index_b: usize) -> Self {
         Self {
@@ -317,7 +317,7 @@ fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputK
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 #[must_use]
-fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
+fn check_clash<A: ActionKey>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = Clash::from_indexes(clash.index_a, clash.index_b);
 
     // For all inputs that were actually pressed that match action A
@@ -349,7 +349,7 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
 
 /// Which (if any) of the actions in the [`Clash`] should be discarded?
 #[must_use]
-fn resolve_clash<A: Actionlike>(
+fn resolve_clash<A: ActionKey>(
     clash: &Clash<A>,
     clash_strategy: ClashStrategy,
     input_streams: &InputStreams,
@@ -416,9 +416,9 @@ mod tests {
     use crate as leafwing_input_manager;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
-    use leafwing_input_manager_macros::Actionlike;
+    use leafwing_input_manager_macros::ActionKey;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
     enum Action {
         One,
         Two,

@@ -10,7 +10,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum CameraMovement {
     Pan,
 }

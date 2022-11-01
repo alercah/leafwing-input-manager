@@ -123,7 +123,7 @@
 - properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
 - added doc examples to `ActionStateDriver`, which allows you to trigger actions based on entity properties
 - document the need to add system ordering when you have other functionality running during `CoreStage::PreUpdate`
-- hint to users that they may want to use multiple `Actionlike` enums
+- hint to users that they may want to use multiple `ActionKey` enums
 
 ## Version 0.3
 
@@ -139,10 +139,10 @@
 ### Usability
 
 - if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
-- reverted change from by-reference to by-value APIs for `Actionlike` types
+- reverted change from by-reference to by-value APIs for `ActionKey` types
   - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
-- relaxed `Hash` and `Eq` bounds on `Actionlike`
-- `InputManagerPlugin::run_in_state` was replaced with `ToggleActions<A: Actionlike>` resource which controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active.
+- relaxed `Hash` and `Eq` bounds on `ActionKey`
+- `InputManagerPlugin::run_in_state` was replaced with `ToggleActions<A: ActionKey>` resource which controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active.
 - `ActionState::state` and `set_state` methods renamed to `button_state` and `set_button_state` for clarity
 - simplified `VirtualButtonState` into a trivial enum `ButtonState`
   - other metadata (e.g. timing information and reasons pressed) is stored in the `ActionData` struct
@@ -179,14 +179,14 @@
 ### Usability
 
 - `InputMap::new()` and `InputMap::insert_multiple` now accept an iterator of `(action, input)` tuples for more natural construction
-- better decoupled `InputMap` and `ActionState`, providing an `InputMap::which_pressed` API and allowing `ActionState::update` to operate based on any `HashSet<A: Actionlike>` of pressed virtual buttons that you pass in
+- better decoupled `InputMap` and `ActionState`, providing an `InputMap::which_pressed` API and allowing `ActionState::update` to operate based on any `HashSet<A: ActionKey>` of pressed virtual buttons that you pass in
 - `InputMap` now uses a collected `InputStreams` struct in all of its methods, and input methods are now optional
 - `InputManagerPlugin` now works even if some input stream resources are missing
 - added the `input_pressed` method to `InputMap`, to check if a single input is pressed
 - renamed `InputMap::assign_gamepad` to `InputMap::set_gamepad` for consistency and clarity (it does not uniquely assign a gamepad)
-- removed `strum` dependency by reimplementing the funcitonality, allowing users to define actions with only the `Actionlike` trait
-- added the `get_at` and `index` methods on the `Actionlike` trait, allowing you to fetch a specific action by its position in the defining enum and vice versa
-- `Copy` bound on `Actionlike` trait relaxed to `Clone`, allowing you to store non-copy data in your enum variants
+- removed `strum` dependency by reimplementing the funcitonality, allowing users to define actions with only the `ActionKey` trait
+- added the `get_at` and `index` methods on the `ActionKey` trait, allowing you to fetch a specific action by its position in the defining enum and vice versa
+- `Copy` bound on `ActionKey` trait relaxed to `Clone`, allowing you to store non-copy data in your enum variants
 - `Clone`, `PartialEq` and `Debug` trait impls for `ActionState`
 - `get_pressed`, `get_just_pressed`, `get_released` and `get_just_released` methods on `ActionState`, for conveniently checking many action states at once
 

@@ -3,7 +3,7 @@ use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum Action {
     PayRespects,
 }

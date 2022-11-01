@@ -18,7 +18,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum TestAction {
     One,
     Two,

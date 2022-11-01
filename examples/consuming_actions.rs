@@ -29,7 +29,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, Debug, Clone)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum MenuAction {
     CloseWindow,
     OpenMainMenu,

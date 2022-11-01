@@ -1,30 +1,30 @@
 //! When debugging this file, `cargo expand` is invaluable.
 //! See: https://github.com/dtolnay/cargo-expand
-//! use `cargo expand --test actionlike_derive`
-use leafwing_input_manager::Actionlike;
+//! use `cargo expand --test ActionKey_derive`
+use leafwing_input_manager::ActionKey;
 
-#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum UnitAction {}
 
-#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum OneAction {
     Jump,
 }
 
-#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum SimpleAction {
     Zero,
     One,
     Two,
 }
 
-#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum UnnamedFieldVariantsAction {
     Run,
     Jump(usize),
 }
 
-#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum NamedFieldVariantsAction {
     Run { x: usize, y: usize },
     Jump,

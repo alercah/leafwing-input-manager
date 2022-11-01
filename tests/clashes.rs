@@ -15,7 +15,7 @@ fn test_app() -> App {
     app
 }
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 enum Action {
     One,
     Two,

@@ -6,6 +6,7 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
+use std::hash::Hash;
 use std::marker::PhantomData;
 
 pub mod action_state;
@@ -23,7 +24,7 @@ pub mod systems;
 pub mod user_input;
 
 // Importing the derive macro
-pub use leafwing_input_manager_macros::Actionlike;
+pub use leafwing_input_manager_macros::ActionKey;
 
 /// Everything you need to get started
 pub mod prelude {
@@ -37,7 +38,7 @@ pub mod prelude {
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
-    pub use crate::{Actionlike, InputManagerBundle};
+    pub use crate::{ActionKey, InputManagerBundle};
 }
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion
@@ -54,9 +55,9 @@ pub mod prelude {
 ///
 /// # Example
 /// ```rust
-/// use leafwing_input_manager::Actionlike;
+/// use leafwing_input_manager::ActionKey;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash)]
+/// #[derive(ActionKey, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -71,7 +72,7 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Clone + 'static {
+pub trait ActionKey: Send + Sync + Clone + Eq + Ord + Hash + 'static {
     /// The number of variants of this action type
     fn num_variants() -> usize;
 
@@ -89,16 +90,16 @@ pub trait Actionlike: Send + Sync + Clone + 'static {
     fn index(&self) -> usize;
 }
 
-/// An iterator of [`Actionlike`] actions
+/// An iterator of [`ActionKey`] actions
 ///
-/// Created by calling [`Actionlike::iter`].
+/// Created by calling [`ActionKey::iter`].
 #[derive(Debug, Clone)]
-pub struct ActionIter<A: Actionlike> {
+pub struct ActionIter<A: ActionKey> {
     index: usize,
     _phantom: PhantomData<A>,
 }
 
-impl<A: Actionlike> Iterator for ActionIter<A> {
+impl<A: ActionKey> Iterator for ActionIter<A> {
     type Item = A;
 
     fn next(&mut self) -> Option<A> {
@@ -111,14 +112,14 @@ impl<A: Actionlike> Iterator for ActionIter<A> {
     }
 }
 
-impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {
+impl<A: ActionKey> ExactSizeIterator for ActionIter<A> {
     fn len(&self) -> usize {
         A::num_variants()
     }
 }
 
 // We can't derive this, because otherwise it won't work when A is not default
-impl<A: Actionlike> Default for ActionIter<A> {
+impl<A: ActionKey> Default for ActionIter<A> {
     fn default() -> Self {
         ActionIter {
             index: 0,
@@ -131,7 +132,7 @@ impl<A: Actionlike> Default for ActionIter<A> {
 ///
 /// Use with [`InputManagerPlugin`](crate::plugin::InputManagerPlugin), providing the same enum type to both.
 #[derive(Bundle)]
-pub struct InputManagerBundle<A: Actionlike> {
+pub struct InputManagerBundle<A: ActionKey> {
     /// An [`ActionState`] component
     pub action_state: ActionState<A>,
     /// An [`InputMap`] component
@@ -139,7 +140,7 @@ pub struct InputManagerBundle<A: Actionlike> {
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
-impl<A: Actionlike> Default for InputManagerBundle<A> {
+impl<A: ActionKey> Default for InputManagerBundle<A> {
     fn default() -> Self {
         Self {
             action_state: ActionState::default(),

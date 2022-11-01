@@ -8,7 +8,7 @@ use syn::{Data, DeriveInput, Ident};
 /// Copyright (c) 2019 Peter Glotfelty
 /// available under the MIT License at https://github.com/Peternator7/strum
 
-pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
+pub(crate) fn action_key_inner(ast: &DeriveInput) -> TokenStream {
     // Splitting the abstract syntax tree
     let enum_name = &ast.ident;
     let (impl_generics, type_generics, where_clause) = &ast.generics.split_for_impl();
@@ -36,7 +36,7 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
 
     let variants = match &ast.data {
         Data::Enum(v) => &v.variants,
-        _ => panic!("`Actionlike` cannot be derived for non-enum types. Manually implement the trait instead."),
+        _ => panic!("`ActionKey` cannot be derived for non-enum types. Manually implement the trait instead."),
     };
 
     // Populate the array
@@ -97,7 +97,7 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     let n_variants = variants.iter().len();
 
     quote! {
-        impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
+        impl #impl_generics #crate_path::ActionKey for #enum_name #type_generics #where_clause {
             fn num_variants() -> usize {
                 #n_variants
             }
