@@ -14,7 +14,6 @@ use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::marker::PhantomData;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -75,10 +74,8 @@ use std::marker::PhantomData;
 pub struct InputMap<A: ActionKey> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `ActionKey::id` of `A`
-    map: HashMap<usize, PetitSet<UserInput, 16>>,
+    map: HashMap<A, PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
-    #[serde(skip)]
-    marker: PhantomData<A>,
 }
 
 impl<A: ActionKey> Default for InputMap<A> {
@@ -86,7 +83,6 @@ impl<A: ActionKey> Default for InputMap<A> {
         InputMap {
             map: HashMap::new(),
             associated_gamepad: None,
-            marker: PhantomData,
         }
     }
 }
@@ -166,7 +162,7 @@ impl<A: ActionKey> InputMap<A> {
     pub fn insert(&mut self, input: impl Into<UserInput>, action: A) -> &mut Self {
         let input = input.into();
 
-        self.map.entry(action.index()).or_default().insert(input);
+        self.map.entry(action).or_default().insert(input);
 
         self
     }
@@ -181,10 +177,7 @@ impl<A: ActionKey> InputMap<A> {
     pub fn insert_at(&mut self, input: impl Into<UserInput>, action: A, index: usize) -> &mut Self {
         let input = input.into();
 
-        self.map
-            .entry(action.index())
-            .or_default()
-            .insert_at(input, index);
+        self.map.entry(action).or_default().insert_at(input, index);
 
         self
     }
@@ -255,7 +248,7 @@ impl<A: ActionKey> InputMap<A> {
             None
         };
 
-        for (mapping, action) in other.iter() {
+        for (action, mapping) in other.iter() {
             for input in mapping.iter() {
                 new_map.insert(input.clone(), action.clone());
             }
@@ -311,7 +304,7 @@ impl<A: ActionKey> InputMap<A> {
     ) -> bool {
         let action_data = self.which_pressed(input_streams, clash_strategy);
         action_data
-            .get(&action.index())
+            .get(&action)
             .map_or(false, |data| data.state.pressed())
     }
 
@@ -324,13 +317,13 @@ impl<A: ActionKey> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> HashMap<usize, ActionData> {
-        let mut action_data = HashMap::<usize, ActionData>::default();
+    ) -> HashMap<A, ActionData> {
+        let mut action_data = HashMap::<A, ActionData>::default();
 
         // Generate the raw action presses
         for action in A::variants() {
             let mut inputs = Vec::new();
-            let mut data = action_data.entry(action.index()).or_default();
+            let mut data = action_data.entry(action.clone()).or_default();
 
             for input in self
                 .get(action.clone())
@@ -369,21 +362,19 @@ impl<A: ActionKey> InputMap<A> {
 // Utilities
 impl<A: ActionKey> InputMap<A> {
     /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
-        self.map
-            .iter()
-            .map(|(&action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
+    pub fn iter(&self) -> impl Iterator<Item = (&A, &PetitSet<UserInput, 16>)> {
+        self.map.iter()
     }
 
     /// Returns an iterator over all mapped actions with their inputs
-    pub fn iter_mapped(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
-        self.iter().filter(|&(inputs, _)| inputs.len() > 0)
+    pub fn iter_mapped(&self) -> impl Iterator<Item = (&A, &PetitSet<UserInput, 16>)> {
+        self.iter().filter(|&(_, inputs)| inputs.len() > 0)
     }
 
     /// Returns the `action` mappings
     #[must_use]
     pub fn get(&self, action: A) -> Option<&PetitSet<UserInput, 16>> {
-        self.map.get(&action.index())
+        self.map.get(&action)
     }
 
     /// How many input bindings are registered total?
@@ -408,7 +399,7 @@ impl<A: ActionKey> InputMap<A> {
 impl<A: ActionKey> InputMap<A> {
     /// Clears all inputs registered for the `action`
     pub fn clear_action(&mut self, action: A) {
-        self.map.remove(&action.index());
+        self.map.remove(&action);
     }
 
     /// Removes the input for the `action` at the provided index
@@ -416,7 +407,7 @@ impl<A: ActionKey> InputMap<A> {
     /// Returns `true` if an element was found.
     pub fn remove_at(&mut self, action: A, index: usize) -> bool {
         self.map
-            .get_mut(&action.index())
+            .get_mut(&action)
             .map_or(false, |mappings| mappings.remove_at(index))
     }
 
@@ -425,7 +416,7 @@ impl<A: ActionKey> InputMap<A> {
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
         self.map
-            .get_mut(&action.index())
+            .get_mut(&action)
             .and_then(|mappings| mappings.remove(&input.into()))
     }
 }

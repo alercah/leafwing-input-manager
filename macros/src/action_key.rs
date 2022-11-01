@@ -41,7 +41,6 @@ pub(crate) fn action_key_inner(ast: &DeriveInput) -> TokenStream {
 
     // Populate the array
     let mut get_at_match_items = Vec::new();
-    let mut index_match_items = Vec::new();
 
     for (index, variant) in variants.iter().enumerate() {
         // The name of the enum variant
@@ -66,31 +65,9 @@ pub(crate) fn action_key_inner(ast: &DeriveInput) -> TokenStream {
             }
         };
 
-        let index_params = match &variant.fields {
-            // Unit fields have no parameters
-            syn::Fields::Unit => quote! {},
-            // Use the default values for tuple-like fields
-            syn::Fields::Unnamed(fields) => {
-                let underscores = ::std::iter::repeat(quote!(_)).take(fields.unnamed.len());
-                quote! { (#(#underscores),*) }
-            }
-            // Use the default values for tuple-like fields
-            syn::Fields::Named(fields) => {
-                let fields = fields
-                    .named
-                    .iter()
-                    .map(|field| field.ident.as_ref().unwrap());
-                quote! { {#(#fields: _),*} }
-            }
-        };
-
         // Match items
         get_at_match_items.push(quote! {
             #index => Some(#enum_name::#variant_identifier #get_at_params),
-        });
-
-        index_match_items.push(quote! {
-            #enum_name::#variant_identifier #index_params => #index,
         });
     }
 
@@ -106,13 +83,6 @@ pub(crate) fn action_key_inner(ast: &DeriveInput) -> TokenStream {
                 match index {
                     #(#get_at_match_items)*
                     _ => None,
-                }
-            }
-
-            fn index(&self) -> usize {
-                match self {
-                    #(#index_match_items)*
-                    _ => unreachable!()
                 }
             }
         }

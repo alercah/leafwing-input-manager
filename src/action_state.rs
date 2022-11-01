@@ -7,7 +7,6 @@ use bevy::ecs::{component::Component, entity::Entity};
 use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::marker::PhantomData;
 
 /// Metadata about an [`ActionKey`] action
 ///
@@ -125,8 +124,7 @@ pub struct ActionState<A: ActionKey> {
     /// The [`ActionData`] of each action
     ///
     /// The position in this vector corresponds to [`ActionKey::index`].
-    action_data: HashMap<usize, ActionData>,
-    _phantom: PhantomData<A>,
+    action_data: HashMap<A, ActionData>,
 }
 
 impl<A: ActionKey> ActionState<A> {
@@ -134,19 +132,22 @@ impl<A: ActionKey> ActionState<A> {
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`](bevy::input::Input) resources.
-    pub fn update(&mut self, action_data: HashMap<usize, ActionData>) {
+    pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
         assert_eq!(action_data.len(), A::num_variants());
         let default_action_data = ActionData::default();
 
-        for (i, action) in A::variants().enumerate() {
-            let data = action_data.get(&i).unwrap_or(&default_action_data);
+        for action in A::variants() {
+            let data = action_data.get(&action).unwrap_or(&default_action_data);
             match data.state {
-                ButtonState::JustPressed | ButtonState::Pressed => self.press(action),
-                ButtonState::JustReleased | ButtonState::Released => self.release(action),
+                ButtonState::JustPressed | ButtonState::Pressed => self.press(action.clone()),
+                ButtonState::JustReleased | ButtonState::Released => self.release(action.clone()),
             }
 
-            self.action_data.entry(i).or_default().axis_pair = data.axis_pair;
-            self.action_data.entry(i).or_default().value = data.value;
+            self.action_data
+                .entry(action.clone())
+                .or_default()
+                .axis_pair = data.axis_pair;
+            self.action_data.entry(action).or_default().value = data.value;
         }
     }
 
@@ -227,7 +228,7 @@ impl<A: ActionKey> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn action_data(&self, action: A) -> Option<&ActionData> {
-        self.action_data.get(&action.index())
+        self.action_data.get(&action)
     }
 
     /// A mutable reference of the [`ActionData`] of the corresponding `action`
@@ -255,7 +256,7 @@ impl<A: ActionKey> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn action_data_mut(&mut self, action: A) -> &mut ActionData {
-        self.action_data.entry(action.index()).or_default()
+        self.action_data.entry(action).or_default()
     }
 
     /// Get the value associated with the corresponding `action`
@@ -362,8 +363,8 @@ impl<A: ActionKey> ActionState<A> {
     #[inline]
     pub fn set_action_data(&mut self, action: A, data: Option<ActionData>) -> Option<ActionData> {
         match data {
-            Some(data) => self.action_data.insert(action.index(), data),
-            None => self.action_data.remove(&action.index()),
+            Some(data) => self.action_data.insert(action, data),
+            None => self.action_data.remove(&action),
         }
     }
 
@@ -373,7 +374,7 @@ impl<A: ActionKey> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: A) {
-        let data = self.action_data.entry(action.index()).or_default();
+        let data = self.action_data.entry(action).or_default();
         // Consumed actions cannot be pressed until they are released
         if data.consumed {
             return;
@@ -392,7 +393,7 @@ impl<A: ActionKey> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: A) {
-        let data = self.action_data.entry(action.index()).or_default();
+        let data = self.action_data.entry(action).or_default();
 
         // Once released, consumed actions can be pressed again
         data.consumed = false;
@@ -444,7 +445,7 @@ impl<A: ActionKey> ActionState<A> {
     /// ```
     #[inline]
     pub fn consume(&mut self, action: A) {
-        let data = self.action_data.entry(action.index()).or_default();
+        let data = self.action_data.entry(action).or_default();
         // This is the only difference from action_state.release(action)
         data.consumed = true;
         data.state.release();
@@ -463,7 +464,7 @@ impl<A: ActionKey> ActionState<A> {
     #[must_use]
     pub fn pressed(&self, action: A) -> bool {
         self.action_data
-            .get(&action.index())
+            .get(&action)
             .map_or(false, |data| data.state.pressed())
     }
 
@@ -472,7 +473,7 @@ impl<A: ActionKey> ActionState<A> {
     #[must_use]
     pub fn just_pressed(&self, action: A) -> bool {
         self.action_data
-            .get(&action.index())
+            .get(&action)
             .map_or(false, |data| data.state.just_pressed())
     }
 
@@ -490,7 +491,7 @@ impl<A: ActionKey> ActionState<A> {
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
         self.action_data
-            .get(&action.index())
+            .get(&action)
             .map_or(false, |data| data.state.just_released())
     }
 
@@ -530,14 +531,14 @@ impl<A: ActionKey> ActionState<A> {
     /// that corresponds exactly to the start of a frame, rather than relying on idiosyncratic timing.
     pub fn instant_started(&self, action: A) -> Option<Instant> {
         self.action_data
-            .get(&action.index())
+            .get(&action)
             .and_then(|data| data.timing.instant_started)
     }
 
     /// The [`Duration`] for which the action has been held or released
     pub fn current_duration(&self, action: A) -> Duration {
         self.action_data
-            .get(&action.index())
+            .get(&action)
             .map_or(Duration::ZERO, |data| data.timing.current_duration)
     }
 
@@ -547,7 +548,7 @@ impl<A: ActionKey> ActionState<A> {
     /// the action was last pressed or released.
     pub fn previous_duration(&self, action: A) -> Duration {
         self.action_data
-            .get(&action.index())
+            .get(&action)
             .map_or(Duration::ZERO, |data| data.timing.previous_duration)
     }
 }
@@ -556,7 +557,6 @@ impl<A: ActionKey> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
             action_data: HashMap::default(),
-            _phantom: PhantomData::default(),
         }
     }
 }
